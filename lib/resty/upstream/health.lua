@@ -284,6 +284,27 @@ local function check_peer(ctx, id, peer, is_backup)
         end
     end
 
+    if expected_string then
+        local from, to, err = re_find(status_line, "(".. expected_string ..")", "joi", nil, 1)
+	if err then
+	    errlog("failed to parse expected string line: ", err)
+	end
+
+	if not from then
+	    peer_error(ctx, is_backup, id, peer, "bad expected string line from ", name, ": ", status_line)
+	    sock:close()
+	    return
+	end
+
+	local status = sub(status_line, from, to)
+	if not status then
+            peer_error(ctx, is_backup, id, peer, "bad expected string from ", name, ": ", status)
+	    sock:close()
+	    return
+	end
+    end
+
+
     peer_ok(ctx, is_backup, id, peer)
     sock:close()
 end
@@ -545,6 +566,11 @@ function _M.spawn_checker(opts)
         return nil, "only \"http\" and \"https\" type are supported right now"
     end
 
+    local expected_string = opts.expected_string
+    if not expected_string then
+        expected_string = nil
+    end
+
     local ssl_verify = opts.ssl_verify
     if ssl_verify == nil then
         ssl_verify = true
@@ -636,6 +662,7 @@ function _M.spawn_checker(opts)
         statuses = statuses,
         version = 0,
         concurrency = concur,
+	expected_string = expected_string,
         type = typ,
         host = opts.host,
         ssl_verify = ssl_verify
