@@ -214,6 +214,7 @@ local function check_peer(ctx, id, peer, is_backup)
     local name = peer.name
     local statuses = ctx.statuses
     local req = ctx.http_req
+    local expected_string = ctx.expected_string
 
     local sock, err = stream_sock()
     if not sock then
@@ -251,7 +252,7 @@ local function check_peer(ctx, id, peer, is_backup)
                           "failed to send request to ", name, ": ", err)
     end
 
-    local status_line, err = sock:receive()
+    local status_line, err = sock:receive("*a")
     if not status_line then
         peer_error(ctx, is_backup, id, peer,
                    "failed to receive status line from ", name, ": ", err)
